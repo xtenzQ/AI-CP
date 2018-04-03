@@ -1,0 +1,51 @@
+[System]
+Name='fis'
+Type='sugeno'
+Version=2.0
+NumInputs=3
+NumOutputs=1
+NumRules=5
+AndMethod='prod'
+OrMethod='probor'
+ImpMethod='prod'
+AggMethod='sum'
+DefuzzMethod='wtaver'
+
+[Input1]
+Name='x2'
+Range=[0 1]
+NumMFs=3
+MF1='L1':'trimf',[0 0.183048279471891 0.366096558943782]
+MF2='H1':'trimf',[0.366096558943782 0.438319689619767 0.510542820295751]
+MF3='H2':'trimf',[0.510542820295751 0.755271410147875 1]
+
+[Input2]
+Name='x4'
+Range=[0 1]
+NumMFs=2
+MF1='L':'trimf',[0 0.204063606151085 0.40812721230217]
+MF2='H':'trimf',[0.40812721230217 0.704063606151085 1]
+
+[Input3]
+Name='x5'
+Range=[0 1]
+NumMFs=2
+MF1='L':'trimf',[0 0.240302731344109 0.480605462688218]
+MF2='H':'trimf',[0.480605462688218 0.740302731344109 1]
+
+[Output1]
+Name='y1'
+Range=[1 5]
+NumMFs=5
+MF1='one':'constant',[1]
+MF2='two':'constant',[2]
+MF3='three':'constant',[3]
+MF4='four':'constant',[4]
+MF5='five':'constant',[5]
+
+[Rules]
+1 1 0, 5 (1) : 1
+2 1 0, 3 (1) : 1
+3 2 0, 2 (1) : 1
+2 2 1, 1 (1) : 1
+2 2 2, 4 (1) : 1
