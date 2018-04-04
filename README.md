@@ -3,6 +3,7 @@ Tasks of artificial intelligence and concurrent programming course in Irkutsk Na
 
 ## Contents
 1. [Fuzzy Inference System](#fuzzy-inference-system)
+2. Biological neural network
 
 ## Fuzzy Inference System
 
