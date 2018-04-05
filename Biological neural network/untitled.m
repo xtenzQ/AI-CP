@@ -82,11 +82,11 @@ global range;
 global attribute;
 global succeed;
 global attrcount;
-global classcount;
+global classCount;
 global stree;
 global tree1;
-global A;
-
+global X;
+global Y;
 global Ytrain;
 global Xtrain;
 global Ytest;
@@ -95,29 +95,38 @@ global Xtest;
 range = str2num(get(handles.edit3,'String'));
 attribute = str2num(get(handles.edit4,'String'));
 succeed = str2double(get(handles.edit5,'String'));
-classcount = str2num(get(handles.edit7,'String'));
+classCount = str2num(get(handles.edit7,'String'));
 attrcount = str2num(get(handles.edit8,'String'));
 
-A = getRndNumbers(attribute, succeed, attrcount, classcount, range);
+Y = getRndNumbers(attribute, succeed, attrcount, classCount, range);
 
-for j=1:classcount
+
+for j=1:classCount
     for i=((j-1)*attribute+1):attribute*j
-        Y(((j-1)*attribute+1):attribute*j,1)=j;%
+        X(((j-1)*attribute+1):attribute*j,1)=j;%
     end
 end
 
-A = normc(A)*10;
+Y = normc(Y)*10;
+set(handles.uitable3, 'data', Y);
 
-C = cvpartition(classcount * attribute,'holdout',0.4);
+%Xtest = A(test(C),:);
+%Xtrain = A(training(C),:);
+%Ytest= Y(test(C),:);
+%Ytrain = Y(training(C),:);
 
-Xtest = A(test(C),:);
-Xtrain = A(training(C),:);
-Ytest= Y(test(C),:);
-Ytrain = Y(training(C),:);
+%stree = fitctree(Ytrain,Xtrain);
+%[~,~,~,bestlevel] = cvLoss(stree, 'SubTrees','All','TreeSize','min');
+%tree1 = prune(stree,'Level', bestlevel);
 
-stree = fitctree(Xtrain,Ytrain);
-[~,~,~,bestlevel] = cvLoss(stree, 'SubTrees','All','TreeSize','min');
-tree1 = prune(stree,'Level', bestlevel);
+cv = cvpartition(classCount * attribute,'holdout',0.4);
+Xtrain = X(training(cv),:);
+Ytrain = Y(training(cv),:);
+Xtest = X(test(cv),:);
+Ytest = Y(test(cv),:);
+t1= fitctree(Ytrain,Xtrain);
+[~,~,~,bestlevel] = cvLoss(t1, 'SubTrees','All','TreeSize','min');
+tree1 = prune(t1,'Level', bestlevel) ;
 
 
 % --- Executes on button press in pushbutton2.
@@ -130,6 +139,11 @@ global Xtrain;
 global Xtest;
 global Ytrain;
 global Ytest;
+global classCount;
+global attrcount;
+global X;
+global Y;
+save main.mat X Y classCount attrcount;
 save trainTree.mat tree1;
 save xte.mat Xtest;
 save xtr.mat Xtrain;
@@ -146,11 +160,17 @@ global Xtrain;
 global Xtest;
 global Ytrain;
 global Ytest;
+global classCount;
+global attrcount;
+global X;
+global Y;
+load main.mat X Y classCount attrcount;
 load trainTree.mat tree1;
 load xte.mat Xtest;
 load xtr.mat Xtrain;
 load yte.mat Ytest;
 load ytr.mat Ytrain;
+set(handles.uitable3, 'data', Y);
 
 
 function edit3_Callback(hObject, eventdata, handles)
@@ -241,11 +261,18 @@ global net1;
 global net2;
 global net3;
 global net4;
+global classCount;
+global attrcount;
 
+% Конкурирующая сеть (Кохонена)
 if (r1 == 1)
-    net1 = competlayer(4);
+    % Создание сети
+    net1 = competlayer(classCount);
+    % 
     net1.trainParam.epochs = str2num(get(handles.edit6,'String'));
-    net1 = train(net1,Ytrain');
+    % Обучение сети
+    net1 = train(net1, Ytrain');
+    % 
     save net1 net1
 end
 if (r2 == 1)
@@ -293,6 +320,7 @@ global Ytest;
 global Xtest;
 global classCount;
 global nett;
+
 r1 = get(handles.net11,'Value');
 r2 = get(handles.net22,'Value');
 r3 = get(handles.net33,'Value');
@@ -300,24 +328,143 @@ r4 = get(handles.net44,'Value');
 
 if (r1 == 1)
     load net1 net1;
-    nett = net1;
+    % 
+    R = net1(Ytest');
+    % преобразование матрицы - результата классификации для сети Кохнена в
+    % массив ind - номеров классов для классифицированных объектов
+    ind = vec2ind(R);
+    % Задаем оси
+    axes(handles.axes1);
+    % Строим график
+    scatter3(Ytest(:, 1), Ytest(:, 2), Ytest(:, 3), 5, ind, 'filled');
+    grid on;
+    % Матрица совпадений по каждому классу
+    c_M = confusionmat(Xtest, ind');
+    % 
+    disp('Kohonen net - test');
+    % 
+    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
+    % 
+    set(handles.uitable1, 'data', C_tt);
+    A_train = 0;
+    for i = 1 : classCount
+        A_train = A_train + max(C_tt(i,:));
+    end
+    A_train = A_train / classCount;
+
+    R=net1(Ytrain');
+    ind = vec2ind(R);
+    axes(handles.axes2);
+    scatter3(Ytrain(:,1), Ytrain(:,2), Ytrain(:,3),5,ind,'filled');
+    grid on;
+
+    c_M=confusionmat(Xtrain,ind');
+    disp('Kohonen net - train');
+    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
+    set(handles.uitable2, 'data', C_tt);
+    A_train2 = 0;
+    
+    for i=1:classCount
+        A_train2 = A_train2+max(C_tt(i,:));
+    end;
+    A_train2 = A_train2/classCount;
+    disp('Number of iterations for Kohonen net ');
+    disp(net1.trainParam.epochs);
+
+    disp('Average training for Kohonen net ');
+    disp((A_train+A_train2)/2);
 end
 if (r2 == 1)
     load net2 net2;
-    nett = net2;
+    y = net2(Ytest');
+
+    perf = perform(net2,Xtest',y);
+    disp(perf);
+    ind = vec2ind(y);
+    disp(ind);
+    axes(handles.axes1);
+    scatter3(Ytest(:,1),Ytest(:,2),Ytest(:,3),5,ind,'filled');
+    grid on;
+
+    c_M=confusionmat(Xtest,ind');
+    disp('recognition - test');
+    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
+    set(handles.uitable1, 'data', C_tt);
+    A_train=0;
+    for i=1:classCount
+        A_train=A_train+max(C_tt(i,:));
+    end
+    A_train=A_train/classCount;
+
+    y = net2(Ytrain');
+    ind=round(y);
+    axes(handles.axes2);
+    scatter3(Ytrain(:,1),Ytrain(:,2),Ytrain(:,3),5,ind,'filled');
+    grid on;
+
+    c_M=confusionmat(Xtrain,ind');
+    disp('recognition net - train');
+    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
+    set(handles.uitable2, 'data', C_tt);
+    A_train2=0;
+    for i=1:classCount
+        A_train2=A_train2+max(C_tt(i,:));
+    end;
+    A_train2=A_train2/classCount;
+
+    disp('Number of iterations for recognition net ');
+    disp(net2.trainParam.epochs);
+
+    disp('Average training for recognition net ');
+    disp((A_train+A_train2)/2);
 end
 if (r3 == 1)
     load net3 net3;
-    nett = net3;
+    y = net3(Ytest');
+    axes(handles.axes1);
+    scatter3(Ytest(:,1),Ytest(:,2),Ytest(:,3),5,round(y'),'filled');
+    grid on;
+
+    c_M=confusionmat(Xtest,round(y));
+    disp('feed forward net - test');
+    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
+    set(handles.uitable1, 'data', C_tt);
+    A_train=0;
+    for i=1:classCount
+        A_train=A_train+max(C_tt(i,:));
+    end
+    A_train=A_train/classCount;
+
+    y = net3(Ytrain');
+    axes(handles.axes2);
+    scatter3(Ytrain(:,1),Ytrain(:,2),Ytrain(:,3),5,round(y'),'filled');
+    grid on;
+
+    c_M=confusionmat(Xtrain,round(y));
+    disp('feed forward net - train');
+    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
+    set(handles.uitable2, 'data', C_tt);
+    A_train2=0;
+    for i=1:classCount
+        A_train2=A_train2+max(C_tt(i,:));
+    end;
+    A_train2=A_train2/classCount;
+
+    disp('Number of iterations for feed forward net ');
+    disp(net3.trainParam.epochs);
+
+    disp('Average training for feed forward net ');
+    disp((A_train+A_train2)/2);
 end
 if (r4 == 1)
     load net4 net4;
-    Xtest2=Xtest;
+    Xtest2 = Xtest;
     for i=1:size(Xtest)
         if (Xtest(i) ~= 1)
-            Xtest2(i)=0;
-        end;
-    end;
+            Xtest2(i) = 0;
+        end
+    end
+    
     y = net4(Ytest');
     axes(handles.axes1);
     plotpv(Ytest',Xtest2');
@@ -330,10 +477,10 @@ if (r4 == 1)
     C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
     set(handles.uitable1, 'data', C_tt);
     A_train=0;
-    for i=1:4
+    for i=1:classCount
         A_train=A_train+max(C_tt(i,:));
     end
-    A_train=A_train/4;
+    A_train=A_train/classCount;
 
     Xtrain2=Xtrain;
     for i=1:size(Xtrain)
@@ -363,42 +510,6 @@ if (r4 == 1)
     disp(net4.trainParam.epochs);
 
     disp('Average training for persiptron net ');
-    disp((A_train+A_train2)/2);
-else 
-    R = nett(Ytest');
-    ind = vec2ind(R);
-    axes(handles.axes1);
-    scatter3(Ytest(:,1),Ytest(:,2),Ytest(:,3),5,ind,'filled');
-    grid on;
-
-    c_M=confusionmat(Xtest,ind');
-
-    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
-    set(handles.uitable1, 'data', C_tt);
-    A_train=0;
-    for i=1:classCount
-        A_train=A_train+max(C_tt(i,:));
-    end
-    A_train=A_train/classCount;
-
-    R=nett(Ytrain');
-    ind = vec2ind(R);
-    axes(handles.axes2);
-    scatter3(Ytrain(:,1),Ytrain(:,2),Ytrain(:,3),5,ind,'filled');
-    grid on;
-
-    c_M=confusionmat(Xtrain,ind');
-    C_tt = bsxfun(@rdivide,c_M,sum(c_M,2)) * 100;
-    set(handles.uitable2, 'data', C_tt);
-    A_train2=0;
-    for i=1:classCount
-        A_train2=A_train2+max(C_tt(i,:));
-    end
-    A_train2=A_train2/classCount;
-    disp('Number of iterations for Kohonen net ');
-    disp(nett.trainParam.epochs);
-
-    disp('Average training for Kohonen net ');
     disp((A_train+A_train2)/2);
 end
 
