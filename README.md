@@ -13,6 +13,6 @@ A fuzzy inference system (FIS) is a system that uses fuzzy set theory to map inp
 
 ## Neural network
 
-([Folder](https://github.com/xtenzQ/AI-CP/tree/master/Biological%20neural%20network)]
+[[Folder](https://github.com/xtenzQ/AI-CP/tree/master/Biological%20neural%20network)]
 
 ## References
