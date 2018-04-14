@@ -181,7 +181,7 @@ for j=1:classCount
     end
 end
 
-set(handles.uitable3, 'data', A);
+%set(handles.uitable3, 'data', A);
 
 C = cvpartition(classCount * attribute,'holdout',0.4);
 trainY = X(training(C),:);
@@ -425,9 +425,12 @@ if (get(handles.radiobutton1,'Value') == 1)
     else
         gp='no';
     end
-    t=full(ind2vec(trainY'));
+    t = full(ind2vec(trainY'));
+    % useGPU - yes (выполняются на GPU), no (выполняются на CPU)
+    % useParallel - yes (происходят в обычной сессии), no (на параллельных процессах)	
     [net3 tr] = train(net3, trainArray', t, 'useParallel', par, 'useGPU',gp); 
     set(handles.text14,'String',num2str(max(tr.time)));
+    % Получение  времени
     max(tr.time)
     save net3 net3
 end
